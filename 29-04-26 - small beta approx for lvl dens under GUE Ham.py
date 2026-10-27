@@ -1,0 +1,109 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 29 14:04:36 2026
+
+@author: j64461cs
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import quad
+from scipy.optimize import fsolve
+from scipy.special import i1
+
+def U_func(beta):
+    if beta < 1e-6: return 1.0
+    return i1(2*beta) / beta
+
+def H_integral(u, beta):
+    U = U_func(beta)
+    def integrand_real(E):
+        denom = U * np.exp(beta * E) - u
+        return (np.sqrt(4 - E**2) / denom).real
+    def integrand_imag(E):
+        denom = U * np.exp(beta * E) - u
+        return (np.sqrt(4 - E**2) / denom).imag
+    
+    re, _ = quad(integrand_real, -2, 2, limit=100)
+    im, _ = quad(integrand_imag, -2, 2, limit=100)
+    return (re + 1j*im) / (2 * np.pi)
+
+def compute_rho(lambdas, beta, c, eps=1e-8): #eps improves low lambda numerics
+    rhos = []
+    last_u = 0.5 - 0.5j 
+    
+    for lam in lambdas:
+        w = 1.0 / (lam + 1j * eps)
+        
+        def objective(vars):
+            u = vars[0] + 1j * vars[1]
+            H = H_integral(u, beta)
+            res = w - u / (1 + c * u * H)
+            return [res.real, res.imag]
+        
+        sol = fsolve(objective, [last_u.real, last_u.imag], xtol=1e-8)
+        u_sol = sol[0] + 1j * sol[1]
+        last_u = u_sol 
+        
+        if abs(c) < 1e-9:
+            G = u_sol**2 * H_integral(u_sol, beta)
+        else:
+            G = (u_sol - w) / c
+            
+        val = -np.imag(G) / np.pi
+        rhos.append(max(0, val)) 
+        
+    return np.array(rhos)
+
+def marchenko_pastur(x, c):
+    if c == 0: return np.zeros_like(x)
+    x_min = (1 - np.sqrt(c))**2
+    x_max = (1 + np.sqrt(c))**2
+    with np.errstate(divide='ignore', invalid='ignore'):
+        res = np.sqrt(np.maximum(0, (x_max - x) * (x - x_min))) / (2 * np.pi * c * x)
+    return np.nan_to_num(res)
+
+def rho_small_beta(x, beta, c):
+    b2 = beta**2
+    disc = 4 * (c + b2 * x) - (1 + c - x)**2
+    with np.errstate(divide='ignore', invalid='ignore'):
+        numerator = np.sqrt(np.maximum(0, disc))
+        denominator = 2 * np.pi * x * (c + b2 * x)
+        res = numerator / denominator
+    return np.nan_to_num(res)
+
+# Parameters
+beta_val = 0.3
+c_val = 1.0     
+lams = np.linspace(0.001, 4.5, 1000)
+
+# Computation
+print(f"Solving for beta={beta_val}, c={c_val}...")
+rho_thermal = compute_rho(lams, beta_val, c_val)
+rho_mp = marchenko_pastur(lams, c_val)
+rho_approx = rho_small_beta(lams, beta_val, c_val)
+
+# Transformations
+x_vals = np.sqrt(lams)
+P_thermal = 2 * x_vals * rho_thermal
+P_mp = 2 * x_vals * rho_mp
+P_approx = 2 * x_vals * rho_approx
+
+# --- Plotting (ONLY bottom figure) ---
+plt.figure(figsize=(10, 6))
+
+plt.plot(x_vals, P_thermal, 'o', markersize=4,
+         label=fr'Numerical ($\beta={beta_val}$)', color='tab:red')
+plt.plot(x_vals, P_approx, '-', linewidth=2,
+         label=fr'High-temperature approximation', color='k')
+plt.plot(x_vals, P_mp, 'k--',
+         label='Marchenko-Pastur', alpha=0.6)
+
+plt.xlabel(r"$\sqrt{\lambda}$", fontsize=16)
+plt.ylabel(r"$P(\sqrt{\lambda})$", fontsize=16)
+plt.legend(loc='upper right', fontsize=12)
+plt.grid(True, alpha=0.3)
+plt.xlim(0, np.sqrt(5))
+
+plt.tight_layout()
+plt.show()
