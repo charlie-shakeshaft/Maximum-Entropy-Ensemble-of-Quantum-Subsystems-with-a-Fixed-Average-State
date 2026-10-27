@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Oct  5 12:05:12 2026
 
-@author: j64461cs
+@author: Charlie Shakeshaft
 """
 
 import numpy as np
@@ -10,13 +9,12 @@ import scipy.linalg as la
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
 
-# Pauli matrices and Identity
+# Paulis and identity
 sigmaX = np.array([[0, 1], [1, 0]], dtype=complex)
 sigmaZ = np.array([[1, 0], [0, -1]], dtype=complex)
 Id = np.eye(2, dtype=complex)
 
 def TFIMHamiltonian(nSpins, J, g):
-    """Constructs the Transverse Field Ising Model (TFIM) Hamiltonian."""
     if nSpins == 0:
         return np.array([[0.0]], dtype=complex)
     if nSpins == 1:
@@ -42,20 +40,17 @@ def TFIMHamiltonian(nSpins, J, g):
     return -(hZZ + hX)
 
 def GibbsState(H, beta):
-    """Calculates the Gibbs state rho = exp(-beta*H) / Tr(exp(-beta*H))."""
     evals, evecs = la.eigh(H)
     e_vals = np.exp(-beta * evals)
     rhoUn = evecs @ np.diag(e_vals) @ evecs.conj().T
     return rhoUn / np.trace(rhoUn)
 
 def sqrt_hermitian(M):
-    """Safely computes the square root of a positive semi-definite Hermitian matrix."""
     evals, evecs = la.eigh(M)
     evals = np.clip(evals, 0, None)
     return evecs @ np.diag(np.sqrt(evals)) @ evecs.conj().T
 
 def WeightedInducedDensity(d, k, rho0):
-    """Generates a constrained random density matrix and its unnormalized trace weight."""
     A = (np.random.randn(d, k) + 1j * np.random.randn(d, k)) / np.sqrt(2)
     sqrtRho = sqrt_hermitian(rho0)
     X = A @ A.conj().T
@@ -67,13 +62,12 @@ def WeightedInducedDensity(d, k, rho0):
     return rhoTilde / trace_W, trace_W
 
 def VonNeumannEntropy(rho):
-    """Computes the Von Neumann entropy of a density matrix."""
     vals = np.real(la.eigvals(rho))
     vals = vals[vals > 1e-12]
     return -np.sum(vals * np.log(vals))
 
-# PARAMETERS
-nSpinsTotal = 8
+# parameters:
+nSpinsTotal = 10
 Kd = 2**nSpinsTotal
 J = 1.0
 g = 1.0
@@ -84,7 +78,7 @@ stateSamples = 100
 subSpinsRange = np.arange(0, nSpinsTotal + 1)
 divs = 2**subSpinsRange
 
-# Analytical Page curve (beta -> 0)
+# Analytical (infinite-temp) Page curve
 theory_x = []
 theory_y = []
 for d in divs:
@@ -100,7 +94,7 @@ for d in divs:
         theory_x.append(np.log2(d) / nSpinsTotal)
         theory_y.append(val)
 
-# Constrained entropies for multiple betas
+# Constrained entropies for multiple temperatures
 multi_beta_data_FTCWE = []
 multi_beta_data_Born = []
 thermal_entropy_data = []
@@ -150,7 +144,7 @@ for b in betaValues:
     
     print(f"Beta = {b:0.1f} | s(beta) = {s_beta:.4f} nats/spin | Predicted c_peak = {c_peak:.4f}")
 
-# PLOTTING FUNCTION
+# Plot the two curves:
 def plot_page_curves(data, title):
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -198,10 +192,10 @@ def plot_page_curves(data, title):
     plt.ylim(0, 3)
     plt.show()
 
-# Generate the FTCWE Page Curves
+# Generate the FTCWE Page curves
 plot_page_curves(multi_beta_data_FTCWE, "Fixed-Trace Correlated Wishart Ensemble (FTCWE)")
 
-# Generate the Born-Weighted Ensemble Page Curves
+# Generate the POVM (Born-weighted) ensemble Page Curves
 plot_page_curves(multi_beta_data_Born, r"Born-Rule Weighted Ensemble ($\mathcal{E}$)")
 
 

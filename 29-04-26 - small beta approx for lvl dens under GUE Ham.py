@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed Apr 29 14:04:36 2026
 
-@author: j64461cs
+@author: Charlie Shakeshaft
 """
 
 import numpy as np
@@ -89,7 +88,7 @@ P_thermal = 2 * x_vals * rho_thermal
 P_mp = 2 * x_vals * rho_mp
 P_approx = 2 * x_vals * rho_approx
 
-# --- Plotting (ONLY bottom figure) ---
+# --- Plotting (only plots the \sqrt{x} transformed version, for which the unconstrained HS density is semicircular.) ---
 plt.figure(figsize=(10, 6))
 
 plt.plot(x_vals, P_thermal, 'o', markersize=4,

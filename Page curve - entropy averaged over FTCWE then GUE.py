@@ -2,7 +2,7 @@
 """
 Created on Fri Sep 11 15:20:11 2026
 
-@author: j64461cs
+@author: Charlie Shakeshaft
 """
 
 import numpy as np
@@ -61,28 +61,26 @@ def weighted_induced_entropy_from_gibbs(d, k, vecs, sqrt_weights):
     # B = rho_0^(1/2) A in the eigenbasis of rho_0.
     B = sqrt_weights[:, None] * A
 
-    # The non-zero eigenvalues of B B^\dagger are the eigenvalues
-    # of B^\dagger B. Use the smaller k x k matrix.
+    # The nonzero eigenvalues of BB^\dagger are the eigenvalues of B^\dagger B. Use the smaller k x k matrix.
     gram = B.conj().T @ B
 
     trace = np.trace(gram).real
 
-    # Numerical safeguard.
     if trace <= 0.0:
         return 0.0
 
     eigenvalues = np.linalg.eigvalsh(gram / trace)
 
-    # Remove tiny numerical eigenvalues.
+    # Remove eigenvalues < 10^{-14}.
     eigenvalues = eigenvalues[eigenvalues > 1e-14]
 
     return -np.sum(eigenvalues * np.log(eigenvalues))
 
-# for *each* GUE Hamiltonian, we: 
-    #(1) compute rho0 (thermal)
-    #(2) generate FTCWE states from Ginibre matrices
-    #(3) assign vN entropy to each rho ~ FTCWE
-    #(4) average over these states.
+# for each GUE Hamiltonian, we: 
+    #(1) compute the thermal rho0
+    #(2) generate FTCWE density matrices from Ginibre matrices
+    #(3) assign a vN entropy to each rho ~ FTCWE
+    #(4) average over the FTCWE.
 def average_entropy_for_hamiltonian(d, k, beta, H, state_samples):
 
     # Diagonalise H and obtain the Gibbs eigenbasis/weights once.
@@ -111,11 +109,11 @@ Kd = 2**10
 
 beta_values = [1.0, 1.5, 2.0]
 
-# Number of independent GUE Hamiltonian realizations:
+# Number of independent GUE realisations:
 ham_samples = 30
 
-# Number of FTCWE samples for *each* H ~ GUE
-state_samples = 30
+# Number of FTCWE samples for each H ~ GUE
+state_samples = 15
 
 divs = np.array([
     1,
@@ -153,7 +151,7 @@ for d in divs:
 
 theory_y = np.array(theory_y)
 
-# Calculate Constrained Data for Each Beta:
+# Calculate constrained data for each temperature:
 
 multi_beta_y = []
 

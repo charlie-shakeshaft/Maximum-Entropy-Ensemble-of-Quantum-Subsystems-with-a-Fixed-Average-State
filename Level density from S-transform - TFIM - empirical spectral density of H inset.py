@@ -126,7 +126,7 @@ x_vals = np.sqrt(lams)
 P_thermal = 2 * x_vals * pi_thermal
 P_mp = 2 * x_vals * pi_mp
 
-# --- START OF NEW CODE FOR EMPIRICAL WISHART ENSEMBLE ---
+# --- EMPIRICAL CWE ---
 print("Generating empirical correlated Wishart ensemble (10 samples)...")
 d = 2**N_d
 K = int(d / c_val)
@@ -151,12 +151,11 @@ for _ in range(M):
 
 print("Aggregating empirical Wishart eigenvalues...")
 W_evals = np.concatenate(all_W_evals)
-# --- END OF NEW CODE ---
 
 # Main figure:
 fig, ax2 = plt.subplots(1, 1, figsize=(10, 6))
 
-# Plot empirical Wishart histogram with fully opaque black borders and transparent red fill
+# histogram the empirical CWE eigenvalues:
 ax2.hist(np.sqrt(np.maximum(W_evals, 0)), bins='fd', density=True, 
          facecolor=[mcolors.to_rgba('tab:red', 0.1)], edgecolor='black', linewidth=0.5, 
          label=fr'Empirical CWE ($\beta={beta_val}$)')

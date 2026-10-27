@@ -1,11 +1,10 @@
-
+"""
+@author: Charlie Shakeshaft
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
 def get_mixed_field_ising_hamiltonian(N, J=1.0, h=1.0, g=0.0):
-    """
-    Constructs the N-qubit mixed-field Ising Hamiltonian.
-    """
     I = np.array([[1, 0], [0, 1]], dtype=complex)
     X = np.array([[0, 1], [1, 0]], dtype=complex)
     Z = np.array([[1, 0], [0, -1]], dtype=complex)
@@ -40,9 +39,6 @@ def get_mixed_field_ising_hamiltonian(N, J=1.0, h=1.0, g=0.0):
     return H
 
 def get_thermal_state(H, beta):
-    """
-    Computes the thermal state \rho_0 and its square root \rho_0^{1/2}.
-    """
     evals, evecs = np.linalg.eigh(H)
     
     evals_shifted = evals - np.min(evals)
@@ -58,9 +54,6 @@ def get_thermal_state(H, beta):
     return rho_0, rho_0_half
 
 def generate_wishart_ensembles(N, K, beta, num_samples):
-    """
-    Generates the correlated Wishart matrices and fixed-trace ensembles.
-    """
     d = 2**N
     H = get_mixed_field_ising_hamiltonian(N)
     _, rho_0_half = get_thermal_state(H, beta)
@@ -81,9 +74,6 @@ def generate_wishart_ensembles(N, K, beta, num_samples):
     return np.array(all_evals).flatten(), np.array(all_weights).flatten()
 
 def calculate_nsr_data(N_max, beta, num_samples=1000):
-    """
-    Calculates the Noise-to-Signal Ratio of Tr(W_X) for dimensions up to N_max.
-    """
     Nd_vals = []
     nsr_vals = []
     
@@ -109,22 +99,19 @@ def calculate_nsr_data(N_max, beta, num_samples=1000):
     return Nd_vals, nsr_vals
 
 def plot_ensembles_scaled(evals, weights, N, K, beta):
-    """
-    Plots the scaled histograms and the log-log trace NSR inset.
-    """
     d = 2**N
     
-    # Scale variable: x = \sqrt{d * \lambda}
+    # Scale variable: x = \sqrt{d \lambda}
     scaled_x = np.sqrt(d * np.maximum(evals, 0.0))
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    # (1) Standard Histograms
-    # Weighted Ensemble with pale blue filling
+    # (1) Standard histograms
+    # Weighted ensemble 
     ax.hist(scaled_x, bins=50, density=True, weights=weights, color='lightskyblue', alpha=0.4, 
             edgecolor='royalblue', linewidth=1.2, label=r'$\mathcal{E}=\{p_X, \rho_X\}$')
     
-    # Uniform Ensemble (red step line overlay, no fill)
+    # Uniform ensemble 
     ax.hist(scaled_x, bins=50, density=True, color='crimson', 
             histtype='step', linewidth=2.5, linestyle='--', 
             label=r'FTCWE')
@@ -135,8 +122,8 @@ def plot_ensembles_scaled(evals, weights, N, K, beta):
     ax.legend(fontsize=13, loc='upper right')
     ax.grid(True, linestyle='--', alpha=0.5)
 
-    # (2) Log-Log Inset for Noise-to-Signal Ratio
-    Nd_vals, nsr_vals = calculate_nsr_data(N_max=10, beta=beta, num_samples=10000)
+    # (2) log-log Inset for NSR
+    Nd_vals, nsr_vals = calculate_nsr_data(N_max=6, beta=beta, num_samples=10000)
     
     ax_ins = ax.inset_axes([0.095, 0.11, 0.45, 0.45])
     ax_ins.patch.set_facecolor('white')
@@ -152,9 +139,9 @@ def plot_ensembles_scaled(evals, weights, N, K, beta):
     plt.show()
 
 if __name__ == "__main__":
-    N = 10          # Number of qubits
-    K = 2**N       # Wishart degrees of freedom
-    beta = 0.1     # Inverse temperature. To match fig. 1, need consistent fixing of variance???
+    N = 6          # Number of qubits
+    K = 2**N       # Wishart degrees of freedom (environment size)
+    beta = 0.1     # Inverse temperature
     samples = 500  # Samples for the main histograms
 
     evals, weights = generate_wishart_ensembles(N, K, beta, num_samples=samples)

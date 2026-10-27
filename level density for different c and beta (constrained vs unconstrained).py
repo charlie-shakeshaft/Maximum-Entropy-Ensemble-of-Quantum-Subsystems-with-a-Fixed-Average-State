@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 """
 Created on Fri Jan 30 11:15:48 2026
-@author: j64461cs
+@author: Charlie Shakeshaft
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +14,7 @@ def U_func(beta):
 
 def H_integral(u, beta):
     U = U_func(beta)
-    # Optimized: separate real and imaginary integrands
+    # to optimise, separate real and imaginary integrands
     def integrand_real(E):
         denom = U * np.exp(beta * E) - u
         return (np.sqrt(4 - E**2) / denom).real

@@ -1,33 +1,23 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed Oct 14 17:08:51 2026
 
-@author: j64461cs
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct  6 10:22:56 2026
-
-@author: j64461cs
+@author: Charlie Shakeshaft
 """
 
 import numpy as np
 import scipy.linalg as la
 import matplotlib.pyplot as plt
-import scipy.integrate as integrate
 from scipy.interpolate import make_interp_spline
 from scipy.optimize import brentq
 
 # =====================================================================
-# 1. HAMILTONIAN AND STATE DEFINITIONS
+# 1. TFIM Hamiltonian and (thermal) ref. state definitions:
 # =====================================================================
 sigmaX = np.array([[0, 1], [1, 0]], dtype=complex)
 sigmaZ = np.array([[1, 0], [0, -1]], dtype=complex)
 Id = np.eye(2, dtype=complex)
 
 def TFIMHamiltonian(nSpins, J, g):
-    """Constructs the Transverse Field Ising Model (TFIM) Hamiltonian."""
     if nSpins == 0:
         return np.array([[0.0]], dtype=complex)
     if nSpins == 1:
@@ -53,20 +43,17 @@ def TFIMHamiltonian(nSpins, J, g):
     return -(hZZ + hX)
 
 def GibbsState(H, beta):
-    """Calculates the Gibbs state rho = exp(-beta*H) / Tr(exp(-beta*H))."""
     evals, evecs = la.eigh(H)
     e_vals = np.exp(-beta * evals)
     rhoUn = evecs @ np.diag(e_vals) @ evecs.conj().T
     return rhoUn / np.trace(rhoUn)
 
 def sqrt_hermitian(M):
-    """Safely computes the square root of a positive semi-definite Hermitian matrix."""
     evals, evecs = la.eigh(M)
     evals = np.clip(evals, 0, None)
     return evecs @ np.diag(np.sqrt(evals)) @ evecs.conj().T
 
 def WeightedInducedDensity(d, k, rho0):
-    """Generates a constrained random density matrix (FTCWE)."""
     A = (np.random.randn(d, k) + 1j * np.random.randn(d, k)) / np.sqrt(2)
     sqrtRho = sqrt_hermitian(rho0)
     X = A @ A.conj().T
@@ -74,33 +61,22 @@ def WeightedInducedDensity(d, k, rho0):
     return rhoTilde / np.trace(rhoTilde)
 
 def VonNeumannEntropy(rho):
-    """Computes the Von Neumann entropy of a density matrix."""
     vals = np.real(la.eigvals(rho))
     vals = vals[vals > 1e-12]
     return -np.sum(vals * np.log(vals))
 
 # =====================================================================
-# 2. FREE PROBABILITY: FULL (NON-APPROXIMATED) INVERSE S-TRANSFORM
+# 2. Free probability S-transform and corresponding entropy integral:
 # =====================================================================
 def free_prob_entropy(d, k, lam, ngrid=4000, x_lo=1e-8, a0=0.5, a_end=1e-3, nsteps=30):
     """
-    Free-probability prediction for <S(rho)> of the FTCWE, WITHOUT the high-temperature
-    approximation.  The eigenvalue density pi(x) of mu_{rho0} (x) mu_MP(c) (x = d*eigenvalue,
-    c = d/k) is obtained by numerically inverting the S-transform, i.e. by solving the
-    implicit equation (paper, lambda-H(u) relation)
-
-        x = 1/u + c H(u),     H(u) = int dE sigma(E) / (U e^{beta E} - u)
-                                   = (1/d) sum_j t_j / (1 - u t_j),
-
-    with t_j = d*lam_j the rescaled eigenvalues of rho0 (i.e. sigma(E) is the exact spectral
-    density of the subsystem Hamiltonian), choosing the root with Im u < 0, and then
-        G(x) = u (1 + u H(u)) / (1 + c u H(u)),     pi(x) = -Im G(x + i0) / pi.
-    Finally  S = ln d - int dx pi(x) x ln x   (the atom at x = 0 for c > 1 does not contribute).
+    Free-probability prediction for <S_vN> of the (FT)CWE. The eigenvalue density is obtained by numerically inverting the S-transform, i.e. by solving the
+    implicit equation detailed in Appendix III of the Supp. Mat.
     """
     if d == 1:
         return 0.0
     c = d / k
-    t = d * lam[lam > 1e-300]                  # rescaled eigenvalues of rho0 (mean 1)
+    t = d * lam[lam > 1e-300]   # rescaled eigenvalues of rho0 (mean 1)
     w = 1.0 / d
     H  = lambda u: w * np.sum(t / (1 - u * t))
     Hp = lambda u: w * np.sum(t**2 / (1 - u * t)**2)
@@ -161,14 +137,14 @@ def free_prob_entropy(d, k, lam, ngrid=4000, x_lo=1e-8, a0=0.5, a_end=1e-3, nste
     G = u * (1 + u * Hv) / (1 + c * u * Hv)
     pi_x = np.abs(G.imag) / np.pi
 
-    # S = ln d - int dx pi(x) x ln x   (integrated in ln x: dx = x dlnx)
+    # S = ln d - \int dx \pi(x) x \ln x   (integrated in \ln x: dx = x d\ln x)
     lx = np.log(xs)
     trapz = getattr(np, 'trapezoid', None) or np.trapz   # numpy >= 2 renamed trapz
     integral_val = trapz(pi_x * xs**2 * lx, lx)
     return max(np.log(d) - integral_val, 0.0)
 
-# ==================================================================in 33===
-# 3. PARAMETERS AND EXPERIMENT RUN
+# =====================================================================
+# 3. Run at chosen parameters:
 # =====================================================================
 nSpinsTotal = 10
 Kd = 2**nSpinsTotal
@@ -180,7 +156,7 @@ stateSamples = 200
 subSpinsRange = np.arange(0, nSpinsTotal + 1)
 divs = 2**subSpinsRange
 
-# Analytical standard Page curve (beta -> 0)
+# Analytical (infinte-temp) Page curve
 theory_x = []
 theory_y = []
 for d in divs:
@@ -199,7 +175,7 @@ for d in divs:
 # Data containers
 multi_beta_data = []
 thermal_entropy_data = []
-multi_beta_fp_data = []  # Store Free Probability entropies
+multi_beta_fp_data = []  # Store Free probability entropies
 
 print("=== Simulating FTCWE & Calculating FP Curves ===")
 for b in betaValues:
@@ -221,8 +197,7 @@ for b in betaValues:
                          for _ in range(stateSamples)]
             avgS = np.mean(entropies)
             
-            # (ii) Free Probability: density from the full numerical inverse S-transform,
-            #      using the exact spectrum of rho0 (no high-temperature approximation)
+            # (ii) Free probability: density from the full numerical inverse S-transform, using the exact spectrum of rho0
             fpS = free_prob_entropy(d, k, np.clip(la.eigvalsh(rho0Fixed), 0, None))
         
         b_x.append(nSub / nSpinsTotal)
@@ -240,7 +215,7 @@ for b in betaValues:
     print(f"          max |<S>_FTCWE - S_FP| over N_d = {np.max(np.abs(np.array(b_y) - np.array(fp_y))):.4f} nats")
 
 # =====================================================================
-# 4. PLOTTING
+# 4. Plot:
 # =====================================================================
 
 x_th = np.array(theory_x)
@@ -249,7 +224,6 @@ x_th_sm = np.linspace(x_th.min(), x_th.max(), 300)
 spl_th = make_interp_spline(x_th, y_th, k=2)
 y_th_sm = spl_th(x_th_sm)
 
-# --- FIGURE 1: Empirical FTCWE curves (solid) with free probability overlaid (dotted) ---
 fig1, ax1 = plt.subplots(figsize=(10, 6))
 
 for i, b in enumerate(betaValues):
