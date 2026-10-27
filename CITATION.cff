@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+
+title: "Code for Maximum-Entropy Ensemble of Quantum Subsystems with a Fixed Average State"
+
+authors:
+  - family-names: "Shakeshaft"
+    given-names: "Charlie"
+  - family-names: "White"
+    given-names: "Christopher David"
+  - family-names: "Miller"
+    given-names: "Harry J. D."
+
+version: "1.0.0"
+
+url: "https://github.com/YOUR-USERNAME/YOUR-REPOSITORY"
