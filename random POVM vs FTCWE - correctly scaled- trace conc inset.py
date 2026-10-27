@@ -139,7 +139,7 @@ def plot_ensembles_scaled(evals, weights, N, K, beta):
     plt.show()
 
 if __name__ == "__main__":
-    N = 6          # Number of qubits
+    N = 10          # Number of qubits
     K = 2**N       # Wishart degrees of freedom (environment size)
     beta = 0.1     # Inverse temperature
     samples = 500  # Samples for the main histograms
